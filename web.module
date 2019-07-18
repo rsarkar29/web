@@ -1,0 +1,194 @@
+<?php
+
+/**
+ * @file
+ * Form and submit operation file.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function web_views_api() {
+  return array(
+      'api' => '3',
+      'path' => drupal_get_path('module','web'). '/views',
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function web_menu() {
+
+  $items['web/add/event'] = [
+    'title' => 'Event Entry Form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('web_form'),
+    'access arguments' => array('access content for this module'),
+    'menu_name' => 'main-menu',
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['web/list/event'] = [
+    'title' => 'All Events',
+    'page callback' => 'web_event_data',
+    'access arguments' => array('access content for this module'),
+    'menu_name' => 'main-menu',
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  return $items;
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function web_theme() {
+  return array(
+    'web_form' => array(
+      'render element' => 'form',
+      'template' => 'templates/web-form',
+    ),
+  );
+}
+
+/**
+ * 
+ * @param  $form
+ * @param  $form_state
+ * @return form
+ */
+function web_form($form, $form_state) {
+  $form['event_title'] = [
+  	'#type' => 'textfield',
+    '#title' => t('Event Title'),
+    '#required' => TRUE,
+  ];
+  $form['event_description'] = [
+  	'#type' => 'textarea',
+    '#title' => t('Event Description'),
+    '#required' => FALSE,
+  ];
+  $form['event_venue'] = [
+  	'#type' => 'textfield',
+    '#title' => t('Event Venue'),
+    '#required' => TRUE,
+  ];
+  $form['event_startdate'] = [
+    '#type' => 'textfield',
+    '#description' => t('Enter Date in (YYYY-MM-D H:m:s) format'),
+    '#title' => t('Event Start Date'),
+    '#required' => TRUE,
+  ];
+  $form['event_enddate'] = [
+    '#type' => 'textfield',
+    '#title' => t('Event End Date'),
+    '#description' => t('Enter Date in (YYYY-MM-D H:m:s) format'),
+    '#required' => TRUE,
+  ];
+  $form['event_banner_image'] = [
+    '#type' => 'textfield',
+    '#title' => t('Banner Image URL'),
+    '#required' => TRUE,
+  ];
+  $form['submit'] = [
+    '#type' => 'submit',
+    '#value' => t('Save Event'),
+  ];
+
+  return $form;
+}
+
+/**
+ * Callback - web_form_validate.
+ * @param  $form
+ * @param  $form_state
+ * @return void
+ */
+function web_form_validate($form, &$form_state) {
+
+  $eventStartdate = $form_state['values']['event_startdate'];
+  $eventEnddate = $form_state['values']['event_enddate'];
+    
+  $eventStartdate = new DateTime($eventStartdate);
+  $eventEnddate = new DateTime($eventEnddate);
+
+  if ($eventEnddate < $eventStartdate) {
+      form_set_error(t('Please Enter Valid Date Range'));
+  }
+
+}
+
+/**
+ * Callback - web_form_submit.
+ * @param  $form
+ * @param  $form_state
+ * @return success message
+ */
+function web_form_submit($form, &$form_state) {
+    $banner = '<img src ='.$form_state['values']['event_banner_image'].'>';
+  $fields = [
+  	'event_title' => $form_state['values']['event_title'],
+  	'event_description' => $form_state['values']['event_description'],
+  	'event_venue' => $form_state['values']['event_venue'],
+    'event_startdate' => $form_state['values']['event_startdate'],
+    'event_enddate' => $form_state['values']['event_enddate'],
+    'event_banner_image' => $banner, 
+  ];
+  db_insert('eventdata')->fields($fields)->execute();
+  drupal_set_message(t('Event successfully Created'));
+}
+
+/**
+ * Pager and sorting for this table.
+ */
+function web_event_data() {
+
+  drupal_set_title(t('List of Event in Different Location'));
+
+  $output = '';
+  $header = [
+    ['data' => t('Event Id'), 'field' => 'event_id'],
+    ['data' => t('Event Title'), 'field' => 'event_title'],
+    ['data' => t('Event Description'), 'field' => 'event_description'],
+    ['data' => t('Event Venue'), 'field' => 'event_venue'],
+    ['data' => t('Event Start'), 'field' => 'event_startdate'],
+    ['data' => t('Event End'), 'field' => 'event_enddate'],
+    ['data' => t('Banner Image'), 'field' => 'event_banner_image'],
+  ];
+
+  // Error logging starts here.
+  error_log(print_r($header, TRUE));
+
+  $query = db_select("eventdata", "e");
+  $query->fields('e', ['event_id', 'event_title', 'event_description', 'event_venue', 'event_startdate', 'event_enddate', 'event_banner_image']);
+  $query = $query->extend('TableSort')->extend('PagerDefault')->limit(50);
+  $query->orderByHeader($header);
+  $result = $query->execute();
+
+  $rows = [];
+  while ($data = $result->fetchObject()) {
+    $rows[] = [
+      $data->event_id,
+      $data->event_title,
+      $data->event_description,
+      $data->event_venue,
+      $data->event_startdate,
+      $data->event_enddate,
+      $data->event_banner_image
+    ];
+  };
+
+  $output .= theme('table',
+    [
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => [],
+      'sticky' => TRUE,
+      'caption' => '',
+      'colgroups' => [],
+      'empty' => t("No Records Found."),
+    ]
+  ) . theme('pager');
+
+  return $output;
+}

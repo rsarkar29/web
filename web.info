@@ -1,0 +1,6 @@
+name = Event Form
+description = Event form Display
+package = Event
+core = 7.x
+dependencies[] = views
+files[] = views/web.views.inc”

@@ -1,0 +1,59 @@
+<?php
+/**
+ * @file
+ * Install function for the web module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function web_schema() {
+  $schema['eventdata'] = [
+    'fields' => [
+      'event_id' => [
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'unique primary key',
+      ],
+      'event_title' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Event Title',
+      ],
+      'event_description' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'description' => 'Event Description',
+      ],
+      'event_venue' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Event Venue',
+      ],
+      'event_startdate' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Event Start Date',
+      ],
+      'event_enddate' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Event End Date',
+      ],
+      'event_banner_image' => [
+        'type' => 'text',
+        'not null' => True,
+        'description' => 'Banner Image',
+      ],
+    ],
+    'primary key' => ['event_id'],
+  ];
+
+  return $schema;
+}
